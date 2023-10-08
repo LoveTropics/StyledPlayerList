@@ -6,16 +6,15 @@ import com.google.gson.JsonParser;
 import eu.pb4.predicate.api.GsonPredicateSerializer;
 import eu.pb4.predicate.api.MinecraftPredicate;
 import eu.pb4.styledplayerlist.PlayerList;
-
 import eu.pb4.styledplayerlist.config.data.ConfigData;
 import eu.pb4.styledplayerlist.config.data.StyleData;
 import eu.pb4.styledplayerlist.config.data.legacy.LegacyConfigData;
 import eu.pb4.styledplayerlist.config.data.legacy.LegacyStyleData;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.util.Identifier;
 
-
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.LinkedHashMap;

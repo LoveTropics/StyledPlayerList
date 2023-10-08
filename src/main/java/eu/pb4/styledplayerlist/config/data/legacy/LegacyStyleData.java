@@ -1,7 +1,6 @@
 package eu.pb4.styledplayerlist.config.data.legacy;
 
 import eu.pb4.predicate.api.BuiltinPredicates;
-import eu.pb4.predicate.api.MinecraftPredicate;
 import eu.pb4.styledplayerlist.config.data.StyleData;
 import org.jetbrains.annotations.Nullable;
 

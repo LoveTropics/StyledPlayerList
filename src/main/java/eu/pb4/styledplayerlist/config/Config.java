@@ -13,8 +13,8 @@ import eu.pb4.predicate.api.MinecraftPredicate;
 import eu.pb4.predicate.api.PredicateContext;
 import eu.pb4.styledplayerlist.SPLHelper;
 import eu.pb4.styledplayerlist.config.data.ConfigData;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -31,8 +31,8 @@ public class Config {
     public final ConfigData configData;
     public final TextNode playerNameFormat;
     public final TextNode switchMessage;
-    public final Text unknownStyleMessage;
-    public final Text permissionMessage;
+    public final Component unknownStyleMessage;
+    public final Component permissionMessage;
     private final List<PermissionNameFormat> permissionNameFormat;
     public final boolean isHiddenDefault;
     private final boolean passthroughDefault;
@@ -59,12 +59,12 @@ public class Config {
         return PARSER.parseNode(string);
     }
 
-    public Text getSwitchMessage(ServerPlayerEntity player, String target) {
-        return this.switchMessage.toText(ParserContext.of(DynamicNode.NODES, Map.of("style", Text.literal(target))));
+    public Component getSwitchMessage(ServerPlayer player, String target) {
+        return this.switchMessage.toText(ParserContext.of(DynamicNode.NODES, Map.of("style", Component.literal(target))));
     }
 
     @Nullable
-    public Text formatPlayerUsername(ServerPlayerEntity player) {
+    public Component formatPlayerUsername(ServerPlayer player) {
         var context = PredicateContext.of(player);
         for (PermissionNameFormat entry : this.permissionNameFormat) {
             if (entry.predicate.test(context).success()) {
@@ -75,7 +75,7 @@ public class Config {
         return this.passthroughDefault ? null :this.playerNameFormat.toText(PlaceholderContext.of(player, SPLHelper.PLAYER_NAME_VIEW));
     }
 
-    public boolean isPlayerHidden(ServerPlayerEntity player) {
+    public boolean isPlayerHidden(ServerPlayer player) {
         var context = PredicateContext.of(player);
         for (PermissionNameFormat entry : this.permissionNameFormat) {
             if (entry.predicate.test(context).success()) {

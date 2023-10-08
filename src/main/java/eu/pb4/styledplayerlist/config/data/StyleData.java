@@ -6,7 +6,6 @@ import com.google.gson.annotations.SerializedName;
 import eu.pb4.predicate.api.MinecraftPredicate;
 import org.jetbrains.annotations.Nullable;
 
-import javax.lang.model.util.Types;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;

@@ -2,22 +2,21 @@ package eu.pb4.styledplayerlist.mixin;
 
 import eu.pb4.placeholders.api.PlaceholderContext;
 import eu.pb4.playerdata.api.PlayerDataApi;
-import eu.pb4.styledplayerlist.PlayerList;
 import eu.pb4.styledplayerlist.SPLHelper;
 import eu.pb4.styledplayerlist.access.PlayerListViewerHolder;
 import eu.pb4.styledplayerlist.config.ConfigManager;
 import eu.pb4.styledplayerlist.config.DefaultValues;
 import eu.pb4.styledplayerlist.config.PlayerListStyle;
 import eu.pb4.styledplayerlist.config.data.ConfigData;
-import net.minecraft.nbt.NbtString;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.message.SignedMessage;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.PlayerListHeaderS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.network.Connection;
+import net.minecraft.network.chat.PlayerChatMessage;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundTabListPacket;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -31,12 +30,12 @@ import java.util.List;
 
 import static eu.pb4.styledplayerlist.PlayerList.id;
 
-@Mixin(ServerPlayNetworkHandler.class)
+@Mixin(ServerGamePacketListenerImpl.class)
 public abstract class ServerPlayNetworkManagerMixin implements PlayerListViewerHolder {
 
-    @Shadow public ServerPlayerEntity player;
+    @Shadow public ServerPlayer player;
 
-    @Shadow public abstract void sendPacket(Packet<?> packet);
+    @Shadow public abstract void send(Packet<?> packet);
 
     @Shadow @Final private MinecraftServer server;
 
@@ -50,12 +49,12 @@ public abstract class ServerPlayNetworkManagerMixin implements PlayerListViewerH
     private int styledPlayerList$animationTick = 0;
 
     @Inject(method = "<init>", at = @At("TAIL"))
-    private void styledPlayerList$loadData(MinecraftServer server, ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci) {
+    private void styledPlayerList$loadData(MinecraftServer server, Connection connection, ServerPlayer player, CallbackInfo ci) {
         try {
-            NbtString style = PlayerDataApi.getGlobalDataFor(player, id("style"), NbtString.TYPE);
+            StringTag style = PlayerDataApi.getGlobalDataFor(player, id("style"), StringTag.TYPE);
 
             if (style != null) {
-                this.styledPlayerList$setStyle(style.asString());
+                this.styledPlayerList$setStyle(style.getAsString());
             } else {
                 this.styledPlayerList$reloadStyle();
             }
@@ -67,12 +66,12 @@ public abstract class ServerPlayNetworkManagerMixin implements PlayerListViewerH
     @Inject(method = "tick", at = @At("TAIL"))
     private void styledPlayerList$updatePlayerList(CallbackInfo ci) {
         if (ConfigManager.isEnabled() && SPLHelper.shouldSendPlayerList(this.player)) {
-            var tick = this.server.getTicks();
+            var tick = this.server.getTickCount();
             ConfigData config = ConfigManager.getConfig().configData;
 
             if (tick % this.styledPlayerList$style.updateRate == 0) {
                 var context = PlaceholderContext.of(this.player, SPLHelper.PLAYER_LIST_VIEW);
-                this.sendPacket(new PlayerListHeaderS2CPacket(this.styledPlayerList$style.getHeader(context, this.styledPlayerList$animationTick), this.styledPlayerList$style.getFooter(context, this.styledPlayerList$animationTick)));
+                this.send(new ClientboundTabListPacket(this.styledPlayerList$style.getHeader(context, this.styledPlayerList$animationTick), this.styledPlayerList$style.getFooter(context, this.styledPlayerList$animationTick)));
                 this.styledPlayerList$animationTick += 1;
             }
 
@@ -83,8 +82,8 @@ public abstract class ServerPlayNetworkManagerMixin implements PlayerListViewerH
         }
     }
 
-    @Inject(method = "handleDecoratedMessage", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayNetworkHandler;checkForSpam()V"))
-    private void styledPlayerList$onMessage(SignedMessage signedMessage, CallbackInfo ci) {
+    @Inject(method = "broadcastChatMessage", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;detectRateSpam()V"))
+    private void styledPlayerList$onMessage(PlayerChatMessage signedMessage, CallbackInfo ci) {
         if (ConfigManager.isEnabled() && ConfigManager.getConfig().configData.playerName.updatePlayerNameEveryChatMessage) {
             this.styledPlayerList$updateName();
         }
@@ -103,7 +102,7 @@ public abstract class ServerPlayNetworkManagerMixin implements PlayerListViewerH
         }
         styledPlayerList$reloadStyle();
 
-        PlayerDataApi.setGlobalDataFor(this.player, id("style"), NbtString.of(this.styledPlayerList$activeStyle));
+        PlayerDataApi.setGlobalDataFor(this.player, id("style"), StringTag.valueOf(this.styledPlayerList$activeStyle));
     }
 
 
@@ -116,8 +115,8 @@ public abstract class ServerPlayNetworkManagerMixin implements PlayerListViewerH
     public void styledPlayerList$updateName() {
         try {
             if (ConfigManager.isEnabled() && ConfigManager.getConfig().configData.playerName.changePlayerName) {
-                PlayerListS2CPacket packet = new PlayerListS2CPacket(EnumSet.of(PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME, PlayerListS2CPacket.Action.UPDATE_LISTED), List.of(this.player));
-                this.server.getPlayerManager().sendToAll(packet);
+                ClientboundPlayerInfoUpdatePacket packet = new ClientboundPlayerInfoUpdatePacket(EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED), List.of(this.player));
+                this.server.getPlayerList().broadcastAll(packet);
             }
         } catch (Exception e) {
 
