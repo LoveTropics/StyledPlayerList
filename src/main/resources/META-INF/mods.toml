@@ -1,0 +1,13 @@
+modLoader="javafml"
+loaderVersion="[25,)"
+issueTrackerURL="https://github.com/LoveTropics/StyledPlayerList"
+license="LGPLv3"
+
+[[mods]]
+modId="styledplayerlist"
+version="$mod_version"
+displayName="Styled Player List"
+authors="Patbox"
+description='''
+This mod allows server owners to change player list look!
+'''

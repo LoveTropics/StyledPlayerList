@@ -1,14 +1,12 @@
 package eu.pb4.styledplayerlist.mixin;
 
 import eu.pb4.placeholders.api.PlaceholderContext;
-import eu.pb4.playerdata.api.PlayerDataApi;
 import eu.pb4.styledplayerlist.SPLHelper;
 import eu.pb4.styledplayerlist.access.PlayerListViewerHolder;
 import eu.pb4.styledplayerlist.config.ConfigManager;
 import eu.pb4.styledplayerlist.config.DefaultValues;
 import eu.pb4.styledplayerlist.config.PlayerListStyle;
 import eu.pb4.styledplayerlist.config.data.ConfigData;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.PlayerChatMessage;
 import net.minecraft.network.protocol.Packet;
@@ -28,36 +26,28 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.EnumSet;
 import java.util.List;
 
-import static eu.pb4.styledplayerlist.PlayerList.id;
-
 @Mixin(ServerGamePacketListenerImpl.class)
 public abstract class ServerPlayNetworkManagerMixin implements PlayerListViewerHolder {
 
-    @Shadow public ServerPlayer player;
+    @Shadow
+    public ServerPlayer player;
 
-    @Shadow public abstract void send(Packet<?> packet);
+    @Shadow
+    public abstract void send(Packet<?> packet);
 
-    @Shadow @Final private MinecraftServer server;
-
-    @Unique
-    private String styledPlayerList$activeStyle = ConfigManager.getDefault();
+    @Shadow
+    @Final
+    private MinecraftServer server;
 
     @Unique
     private PlayerListStyle styledPlayerList$style = DefaultValues.EMPTY_STYLE;
-
     @Unique
     private int styledPlayerList$animationTick = 0;
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void styledPlayerList$loadData(MinecraftServer server, Connection connection, ServerPlayer player, CallbackInfo ci) {
         try {
-            StringTag style = PlayerDataApi.getGlobalDataFor(player, id("style"), StringTag.TYPE);
-
-            if (style != null) {
-                this.styledPlayerList$setStyle(style.getAsString());
-            } else {
-                this.styledPlayerList$reloadStyle();
-            }
+            this.styledPlayerList$reloadStyle();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -65,7 +55,7 @@ public abstract class ServerPlayNetworkManagerMixin implements PlayerListViewerH
 
     @Inject(method = "tick", at = @At("TAIL"))
     private void styledPlayerList$updatePlayerList(CallbackInfo ci) {
-        if (ConfigManager.isEnabled() && SPLHelper.shouldSendPlayerList(this.player)) {
+        if (ConfigManager.isEnabled()) {
             var tick = this.server.getTickCount();
             ConfigData config = ConfigManager.getConfig().configData;
 
@@ -89,30 +79,7 @@ public abstract class ServerPlayNetworkManagerMixin implements PlayerListViewerH
         }
     }
 
-    @Override
-    public void styledPlayerList$setStyle(String key) {
-        if (ConfigManager.isEnabled()) {
-            if (ConfigManager.styleExist(key)) {
-                this.styledPlayerList$activeStyle = key;
-            } else {
-                this.styledPlayerList$activeStyle = ConfigManager.getDefault();
-            }
-        } else {
-            this.styledPlayerList$activeStyle = "default";
-        }
-        styledPlayerList$reloadStyle();
-
-        PlayerDataApi.setGlobalDataFor(this.player, id("style"), StringTag.valueOf(this.styledPlayerList$activeStyle));
-    }
-
-
-    @Override
-    public String styledPlayerList$getStyle() {
-        return this.styledPlayerList$activeStyle;
-    }
-
-    @Override
-    public void styledPlayerList$updateName() {
+    private void styledPlayerList$updateName() {
         try {
             if (ConfigManager.isEnabled() && ConfigManager.getConfig().configData.playerName.changePlayerName) {
                 ClientboundPlayerInfoUpdatePacket packet = new ClientboundPlayerInfoUpdatePacket(EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED), List.of(this.player));
@@ -125,20 +92,10 @@ public abstract class ServerPlayNetworkManagerMixin implements PlayerListViewerH
 
     @Override
     public void styledPlayerList$reloadStyle() {
-        var style = ConfigManager.getStyle(this.styledPlayerList$activeStyle);
+        var style = ConfigManager.getStyle();
         if (style != this.styledPlayerList$style) {
             this.styledPlayerList$style = style;
             this.styledPlayerList$animationTick = 0;
         }
-    }
-
-    @Override
-    public int styledPlayerList$getAndIncreaseAnimationTick() {
-        return this.styledPlayerList$animationTick++;
-    }
-
-    @Override
-    public PlayerListStyle styledPlayerList$getStyleObject() {
-        return this.styledPlayerList$style;
     }
 }

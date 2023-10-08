@@ -3,18 +3,12 @@ package eu.pb4.styledplayerlist.config.data;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.*;
 import com.google.gson.annotations.SerializedName;
-import eu.pb4.predicate.api.MinecraftPredicate;
-import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
 public class StyleData {
-    @Nullable
-    @SerializedName("require")
-    public MinecraftPredicate require;
-
     @SerializedName("style_name")
     public String name = "Default";
     @SerializedName("update_tick_time")
@@ -25,11 +19,6 @@ public class StyleData {
     public ElementList footer = new ElementList();
     @SerializedName("hidden_in_commands")
     public boolean hidden = false;
-
-    @Nullable
-    @SerializedName("legacy_line_joining (Remove once updating!)")
-    public Boolean legacyJoinBehaviour;
-
 
     public static class ElementList {
         @SerializedName("values")

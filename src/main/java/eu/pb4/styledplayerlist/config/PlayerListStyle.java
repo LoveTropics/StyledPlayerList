@@ -6,13 +6,8 @@ import eu.pb4.placeholders.api.node.TextNode;
 import eu.pb4.placeholders.api.parsers.NodeParser;
 import eu.pb4.placeholders.api.parsers.StaticPreParser;
 import eu.pb4.placeholders.api.parsers.TextParserV1;
-import eu.pb4.predicate.api.BuiltinPredicates;
-import eu.pb4.predicate.api.MinecraftPredicate;
-import eu.pb4.predicate.api.PredicateContext;
 import eu.pb4.styledplayerlist.config.data.StyleData;
-import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,25 +24,15 @@ public class PlayerListStyle {
     public final int updateRate;
 
     public final boolean hidden;
-    private final MinecraftPredicate require;
 
     public PlayerListStyle(String id, StyleData data) {
         this.id = id;
         this.name = data.name;
         this.updateRate = data.updateRate;
 
-        this.header = AnimatedText.from(data.header, data.legacyJoinBehaviour == Boolean.TRUE);
-        this.footer = AnimatedText.from(data.footer, data.legacyJoinBehaviour == Boolean.TRUE);
+        this.header = AnimatedText.from(data.header);
+        this.footer = AnimatedText.from(data.footer);
         this.hidden = data.hidden;
-        this.require = data.require != null ? data.require : BuiltinPredicates.operatorLevel(0);
-    }
-
-    public boolean hasPermission(ServerPlayer player) {
-        return this.require.test(PredicateContext.of(player)).success();
-    }
-
-    public boolean hasPermission(CommandSourceStack source) {
-        return this.require.test(PredicateContext.of(source)).success();
     }
 
     public Component getHeader(PlaceholderContext context, int tick) {
@@ -61,12 +46,12 @@ public class PlayerListStyle {
     private interface AnimatedText {
         TextNode getFor(int tick);
 
-        static AnimatedText from(StyleData.ElementList elementList, boolean legacy) {
+        static AnimatedText from(StyleData.ElementList elementList) {
             if (elementList.values.isEmpty()) {
                 return AnimatedText.of(TextNode.empty());
             }
 
-            var joiner = legacy ? "\n" : "\n<r>";
+            var joiner = "\n<r>";
 
             if (elementList.values.size() == 1) {
                 return AnimatedText.of(PARSER.parseNode(String.join(joiner, elementList.values.get(0))));
