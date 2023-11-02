@@ -65,28 +65,6 @@ public abstract class ServerPlayNetworkManagerMixin implements PlayerListViewerH
                 this.styledPlayerList$animationTick += 1;
             }
 
-            if (config.playerName.playerNameUpdateRate > 0 && tick % config.playerName.playerNameUpdateRate == 0) {
-                this.styledPlayerList$updateName();
-            }
-
-        }
-    }
-
-    @Inject(method = "broadcastChatMessage", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;detectRateSpam()V"))
-    private void styledPlayerList$onMessage(PlayerChatMessage signedMessage, CallbackInfo ci) {
-        if (ConfigManager.isEnabled() && ConfigManager.getConfig().configData.playerName.updatePlayerNameEveryChatMessage) {
-            this.styledPlayerList$updateName();
-        }
-    }
-
-    private void styledPlayerList$updateName() {
-        try {
-            if (ConfigManager.isEnabled() && ConfigManager.getConfig().configData.playerName.changePlayerName) {
-                ClientboundPlayerInfoUpdatePacket packet = new ClientboundPlayerInfoUpdatePacket(EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED), List.of(this.player));
-                this.server.getPlayerList().broadcastAll(packet);
-            }
-        } catch (Exception e) {
-
         }
     }
 

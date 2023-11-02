@@ -22,9 +22,5 @@ public class ConfigData {
         public boolean hidePlayer = false;
         @SerializedName("format")
         public String playerNameFormat = "%player:displayname%";
-        @SerializedName("update_on_chat_message")
-        public boolean updatePlayerNameEveryChatMessage = false;
-        @SerializedName("update_tick_time")
-        public long playerNameUpdateRate = -1;
     }
 }
