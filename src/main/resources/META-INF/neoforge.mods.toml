@@ -1,0 +1,17 @@
+modLoader = "javafml"
+loaderVersion = "[2,)"
+issueTrackerURL="https://github.com/LoveTropics/StyledPlayerList/issues"
+license = "LGPLv3"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName="Styled Player List"
+displayURL="https://pb4.eu"
+authors="Patbox"
+description='''
+This mod allows server owners to change player list look!
+'''
+
+[[mixins]]
+config = "styledplayerlist.mixins.json"

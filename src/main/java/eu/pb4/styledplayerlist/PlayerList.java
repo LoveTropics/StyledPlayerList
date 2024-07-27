@@ -7,11 +7,6 @@ import eu.pb4.styledplayerlist.command.Commands;
 import eu.pb4.styledplayerlist.config.ConfigManager;
 import eu.pb4.styledplayerlist.config.PlayerListStyle;
 import eu.pb4.styledplayerlist.config.data.ConfigData;
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.Event;
-import net.fabricmc.fabric.api.event.EventFactory;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundTabListPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -20,12 +15,17 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.scores.criteria.ObjectiveCriteria;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.LinkedHashMap;
 
-public class PlayerList implements ModInitializer {
+@Mod(PlayerList.ID)
+public class PlayerList {
 	public static final Logger LOGGER = LogManager.getLogger("Styled Player List");
 	public static final String ID = "styledplayerlist";
 	public static final Scoreboard SCOREBOARD = new Scoreboard();
@@ -35,27 +35,25 @@ public class PlayerList implements ModInitializer {
 			SCOREBOARD, OBJECTIVE_NAME, ObjectiveCriteria.DUMMY,
 			Component.empty(), ObjectiveCriteria.RenderType.INTEGER, false, null);
 
-
-	@Override
-	public void onInitialize() {
-		GenericModInfo.build(FabricLoader.getInstance().getModContainer(ID).get());
-		Commands.register();
-		ServerLifecycleEvents.SERVER_STARTED.register(s -> {
-			ConfigManager.loadConfig();
-
-			CardboardWarning.checkAndAnnounce();
-			//MicroScheduler.get(s).scheduleRepeating(50, () -> tick(s));
-		});
+	public PlayerList() {
+		NeoForge.EVENT_BUS.addListener(Commands::register);
+		NeoForge.EVENT_BUS.addListener(this::tick);
+		NeoForge.EVENT_BUS.addListener(this::onServerStarted);
 
 		Placeholders.registerChangeEvent((a, b) -> ConfigManager.rebuildStyled());
 	}
 
-	private void tick(MinecraftServer server) {
+	private void onServerStarted(ServerStartedEvent event) {
+		ConfigManager.loadConfig();
+	}
+
+	private void tick(ServerTickEvent.Pre event) {
+		MinecraftServer server = event.getServer();
 		if (ConfigManager.isEnabled()) {
 			ConfigData config = ConfigManager.getConfig().configData;
 			for (var player : server.getPlayerList().getPlayers()) {
 				var x = System.nanoTime();
-				if (!SPLHelper.shouldSendPlayerList(player) || player.connection == null) {
+				if (player.connection == null) {
 					continue;
 				}
 				var tick = server.getTickCount();
@@ -81,18 +79,6 @@ public class PlayerList implements ModInitializer {
 		return ResourceLocation.fromNamespaceAndPath(ID, path);
 	}
 
-	public static final Event<PlayerList.PlayerListStyleLoad> PLAYER_LIST_STYLE_LOAD = EventFactory.createArrayBacked(PlayerList.PlayerListStyleLoad.class, (callbacks) -> (styleHelper) -> {
-		for(PlayerListStyleLoad callback : callbacks ) {
-			callback.onPlayerListUpdate(styleHelper);
-		}
-
-	});
-
-	@FunctionalInterface
-	public interface PlayerListStyleLoad {
-		void onPlayerListUpdate(StyleHelper styleHelper);
-	}
-
 
 	public record StyleHelper(LinkedHashMap<String, PlayerListStyle> styles) {
 		public void addStyle(PlayerListStyle style) {
@@ -111,13 +97,5 @@ public class PlayerList implements ModInitializer {
 
 	public static void setPlayersStyle(ServerPlayer player, String key) {
 		((PlayerListViewerHolder) player).styledPlayerList$setStyle(key);
-	}
-
-	public static void addUpdateSkipCheck(ModCompatibility check) {
-		SPLHelper.COMPATIBILITY.add(check);
-	}
-
-	public interface ModCompatibility {
-		boolean check(ServerPlayer player);
 	}
 }

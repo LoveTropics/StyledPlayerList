@@ -1,25 +1,13 @@
 package eu.pb4.styledplayerlist.config;
 
-import eu.pb4.placeholders.api.ParserContext;
 import eu.pb4.placeholders.api.PlaceholderContext;
-import eu.pb4.placeholders.api.Placeholders;
 import eu.pb4.placeholders.api.node.TextNode;
 import eu.pb4.placeholders.api.parsers.NodeParser;
-import eu.pb4.placeholders.api.parsers.PatternPlaceholderParser;
-import eu.pb4.placeholders.api.parsers.StaticPreParser;
-import eu.pb4.placeholders.api.parsers.TextParserV1;
-import eu.pb4.predicate.api.BuiltinPredicates;
-import eu.pb4.predicate.api.MinecraftPredicate;
-import eu.pb4.predicate.api.PredicateContext;
 import eu.pb4.styledplayerlist.SPLHelper;
 import eu.pb4.styledplayerlist.config.data.ConfigData;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import org.jetbrains.annotations.Nullable;
 
 public class Config {
     public static final NodeParser PARSER = NodeParser.builder()
@@ -31,32 +19,15 @@ public class Config {
 
     public final ConfigData configData;
     public final TextNode playerNameFormat;
-
-    public final TextNode rightFormat;
-    public final TextNode switchMessage;
-    public final Component unknownStyleMessage;
-    public final Component permissionMessage;
-    private final List<PermissionNameFormat> permissionNameFormat;
-    public final boolean isHiddenDefault;
+    public final boolean isHidden;
     private final boolean passthroughDefault;
 
 
     public Config(ConfigData data) {
         this.configData = data;
         this.playerNameFormat = parseText(data.playerName.playerNameFormat);
-        this.rightFormat = parseText(data.playerName.rightTextFormat);
-        this.switchMessage = parseText(data.messages.switchMessage);
-        this.unknownStyleMessage = parseText(data.messages.unknownStyleMessage).toText();
-        this.permissionMessage = parseText(data.messages.permissionMessage).toText();
-        this.isHiddenDefault = data.playerName.hidePlayer;
+        this.isHidden = data.playerName.hidePlayer;
         this.passthroughDefault = data.playerName.ignoreFormatting;
-
-        this.permissionNameFormat = new ArrayList<>();
-
-        for (ConfigData.PermissionNameFormat entry : data.playerName.permissionNameFormat) {
-            this.permissionNameFormat.add(new PermissionNameFormat(entry.require != null ? entry.require : BuiltinPredicates.operatorLevel(5),
-                    parseText(entry.format), parseText(entry.rightTextFormat), entry.ignoreFormatting,  entry.hidePlayer != null ? entry.hidePlayer : isHiddenDefault));
-        }
     }
 
     @Nullable
@@ -67,45 +38,12 @@ public class Config {
         return PARSER.parseNode(string);
     }
 
-    public Component getSwitchMessage(ServerPlayer player, String target) {
-        return this.switchMessage.toText(ParserContext.of(DynamicNode.NODES, Map.of("name", Component.literal(target))));
-    }
-
     @Nullable
     public Component formatPlayerUsername(ServerPlayer player) {
-        var context = PredicateContext.of(player);
-        for (PermissionNameFormat entry : this.permissionNameFormat) {
-            if (entry.name != null && entry.predicate.test(context).success()) {
-                return entry.passthrough ? null : entry.name.toText(PlaceholderContext.of(player, SPLHelper.PLAYER_NAME_VIEW));
-            }
-        }
-
         return this.passthroughDefault ? null : this.playerNameFormat.toText(PlaceholderContext.of(player, SPLHelper.PLAYER_NAME_VIEW));
     }
 
-    public Component formatPlayerRightText(ServerPlayer player) {
-        var context = PredicateContext.of(player);
-        for (PermissionNameFormat entry : this.permissionNameFormat) {
-            if (entry.right != null && entry.predicate.test(context).success()) {
-                return entry.right.toText(PlaceholderContext.of(player, SPLHelper.PLAYER_NAME_VIEW));
-            }
-        }
-
-        return this.rightFormat.toText(PlaceholderContext.of(player, SPLHelper.PLAYER_NAME_VIEW));
-    }
-
     public boolean isPlayerHidden(ServerPlayer player) {
-        var context = PredicateContext.of(player);
-        for (PermissionNameFormat entry : this.permissionNameFormat) {
-            if (entry.predicate.test(context).success()) {
-                return entry.hidden;
-            }
-        }
-
-        return this.isHiddenDefault;
-    }
-
-
-    record PermissionNameFormat(MinecraftPredicate predicate, @Nullable TextNode name, @Nullable TextNode right, boolean passthrough, boolean hidden) {
+        return this.isHidden;
     }
 }
