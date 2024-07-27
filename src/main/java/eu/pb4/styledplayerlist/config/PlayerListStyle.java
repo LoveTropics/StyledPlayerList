@@ -4,12 +4,13 @@ import eu.pb4.placeholders.api.PlaceholderContext;
 import eu.pb4.placeholders.api.node.TextNode;
 import eu.pb4.styledplayerlist.config.data.StyleData;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class PlayerListStyle {
-    public final String id;
+    public final ResourceLocation id;
     public final String name;
 
     public final AnimatedText header;
@@ -19,7 +20,7 @@ public class PlayerListStyle {
 
     public final boolean hidden;
 
-    public PlayerListStyle(String id, StyleData data) {
+    public PlayerListStyle(ResourceLocation id, StyleData data) {
         this.id = id;
         this.name = data.name;
         this.updateRate = data.updateRate;

@@ -1,11 +1,12 @@
 package eu.pb4.styledplayerlist.config;
 
+import eu.pb4.styledplayerlist.PlayerList;
 import eu.pb4.styledplayerlist.config.data.StyleData;
 
 import java.util.List;
 
 public class DefaultValues {
-    public static PlayerListStyle EMPTY_STYLE = new PlayerListStyle("", new StyleData());
+    public static PlayerListStyle EMPTY_STYLE = new PlayerListStyle(PlayerList.location("empty"), new StyleData());
 
     public static StyleData exampleStyleData() {
         StyleData data = new StyleData();

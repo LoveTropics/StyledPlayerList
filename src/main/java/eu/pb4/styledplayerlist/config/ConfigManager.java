@@ -1,28 +1,43 @@
 package eu.pb4.styledplayerlist.config;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParser;
+import com.google.gson.JsonParseException;
+import com.mojang.logging.LogUtils;
 import eu.pb4.styledplayerlist.PlayerList;
 import eu.pb4.styledplayerlist.config.data.ConfigData;
 import eu.pb4.styledplayerlist.config.data.StyleData;
-import net.neoforged.fml.loading.FMLPaths;
+import net.minecraft.resources.FileToIdConverter;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
+import net.minecraft.util.profiling.ProfilerFiller;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import org.slf4j.Logger;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 
-
+@EventBusSubscriber(modid = PlayerList.ID)
 public class ConfigManager {
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().setLenient()
             .registerTypeAdapter(StyleData.ElementList.class, new StyleData.ElementList.Serializer())
             .create();
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private static Config CONFIG;
     private static boolean ENABLED = false;
-    private static final LinkedHashMap<String, PlayerListStyle> STYLES = new LinkedHashMap<>();
-    private static final LinkedHashMap<String, StyleData> STYLES_DATA = new LinkedHashMap<>();
+    private static final LinkedHashMap<ResourceLocation, PlayerListStyle> STYLES = new LinkedHashMap<>();
+    private static final LinkedHashMap<ResourceLocation, StyleData> STYLES_DATA = new LinkedHashMap<>();
 
     public static Config getConfig() {
         return CONFIG;
@@ -32,65 +47,74 @@ public class ConfigManager {
         return ENABLED;
     }
 
-    public static boolean loadConfig() {
+    @SubscribeEvent
+    public static void addReloadListeners(AddReloadListenerEvent event) {
+        event.addListener(new SimplePreparableReloadListener<LoadResult>() {
+            @Override
+            protected LoadResult prepare(ResourceManager resourceManager, ProfilerFiller profiler) {
+                return load(resourceManager);
+            }
+
+            @Override
+            protected void apply(LoadResult result, ResourceManager resourceManager, ProfilerFiller profiler) {
+                ConfigManager.apply(result);
+            }
+        });
+    }
+
+    private static void apply(LoadResult result) {
+        STYLES.clear();
+        STYLES_DATA.clear();
         ENABLED = false;
 
         CONFIG = null;
         try {
-            var configDir = FMLPaths.GAMEDIR.get().resolve("config").resolve("styledplayerlist");
-            var configStyle = configDir.resolve("styles");
-            if (!Files.exists(configStyle)) {
-                Files.createDirectories(configStyle);
-                Files.writeString(configStyle.resolve("default.json"), GSON.toJson(DefaultValues.exampleStyleData()), StandardCharsets.UTF_8);
-                Files.writeString(configStyle.resolve("animated.json"), GSON.toJson(DefaultValues.exampleAnimatedStyleData()), StandardCharsets.UTF_8);
-            }
-
-            ConfigData config;
-
-            var configFile = configDir.resolve("config.json");
-            if (Files.exists(configFile)) {
-                var data = JsonParser.parseString(Files.readString(configFile));
-                config = GSON.fromJson(data, ConfigData.class);
-            } else {
-                config = new ConfigData();
-            }
-
-            Files.writeString(configFile, GSON.toJson(config));
-
-            STYLES.clear();
-
-            Files.list(configStyle).filter((name) -> !name.endsWith(".json")).forEach((path) -> {
-                String data;
-                try {
-                    data = Files.readString(path);
-                } catch (IOException e) {
-                    if (path.endsWith(".DS_Store")) return;
-                    e.printStackTrace();
-                    return;
-                }
-
-                StyleData styleData = GSON.fromJson(data, StyleData.class);
-
-                var name = path.getFileName().toString();
-                name = name.substring(0, name.length() - 5);
-                var style = new PlayerListStyle(name, styleData);
-                STYLES.put(name, style);
-                STYLES_DATA.put(name, styleData);
+            result.styles.forEach((id, styleData) -> {
+                var style = new PlayerListStyle(id, styleData);
+                STYLES.put(id, style);
+                STYLES_DATA.put(id, styleData);
             });
-
-            CONFIG = new Config(config);
-            ENABLED = true;
-        } catch(Throwable exception) {
+        } catch (Throwable t) {
             ENABLED = false;
-            PlayerList.LOGGER.error("Something went wrong while reading config!");
-            exception.printStackTrace();
+            LOGGER.error("Something went wrong while reading config!", t);
         }
 
+        CONFIG = new Config(result.config);
+        ENABLED = true;
+    }
+
+    private static LoadResult load(ResourceManager resourceManager) {
+        Optional<Resource> configResource = resourceManager.getResource(PlayerList.location("styled_player_list.json"));
+        ConfigData config = new ConfigData();
+        if (configResource.isPresent()) {
+            try (BufferedReader reader = configResource.get().openAsReader()) {
+                config = GSON.fromJson(reader, ConfigData.class);
+            } catch (IOException | JsonParseException e) {
+                LOGGER.error("Failed to load player list config", e);
+            }
+        }
+
+        FileToIdConverter styleLister = FileToIdConverter.json("player_list_style");
+        ImmutableMap.Builder<ResourceLocation, StyleData> styles = ImmutableMap.builder();
+        styleLister.listMatchingResources(resourceManager).forEach((location, resource) -> {
+            ResourceLocation id = styleLister.fileToId(location);
+            try (BufferedReader reader = resource.openAsReader()) {
+                styles.put(id, GSON.fromJson(reader, StyleData.class));
+            } catch (IOException | JsonParseException e) {
+                LOGGER.error("Failed to load player list style at {}", location, e);
+            }
+        });
+
+        return new LoadResult(config, styles.build());
+    }
+
+    public static boolean reloadConfig(MinecraftServer server) {
+        apply(load(server.getResourceManager()));
         return ENABLED;
     }
 
     public static PlayerListStyle getStyle() {
-        return STYLES.getOrDefault("default", DefaultValues.EMPTY_STYLE);
+        return STYLES.getOrDefault(PlayerList.location("default"), DefaultValues.EMPTY_STYLE);
     }
 
     public static void rebuildStyled() {
@@ -100,5 +124,8 @@ public class ConfigManager {
         for (var e : STYLES_DATA.entrySet()) {
             STYLES.put(e.getKey(), new PlayerListStyle(e.getKey(), e.getValue()));
         }
+    }
+
+    private record LoadResult(ConfigData config, Map<ResourceLocation, StyleData> styles) {
     }
 }

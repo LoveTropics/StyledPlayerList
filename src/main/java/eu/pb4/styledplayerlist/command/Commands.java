@@ -25,7 +25,7 @@ public class Commands {
     }
 
     private static int reloadConfig(CommandContext<CommandSourceStack> context) {
-        if (ConfigManager.loadConfig()) {
+        if (ConfigManager.reloadConfig(context.getSource().getServer())) {
             context.getSource().sendSuccess(() -> Component.literal("Reloaded config!"), false);
         } else {
             context.getSource().sendFailure(Component.literal("Error accrued while reloading config!").withStyle(ChatFormatting.RED));
