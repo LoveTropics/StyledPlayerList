@@ -67,4 +67,14 @@ public abstract class ServerPlayNetworkManagerMixin extends ServerCommonPacketLi
             this.styledPlayerList$animationTick = 0;
         }
     }
+
+    @Override
+    public int styledPlayerList$getAndIncreaseAnimationTick() {
+        return this.styledPlayerList$animationTick++;
+    }
+
+    @Override
+    public PlayerListStyle styledPlayerList$getStyleObject() {
+        return this.styledPlayerList$style;
+    }
 }

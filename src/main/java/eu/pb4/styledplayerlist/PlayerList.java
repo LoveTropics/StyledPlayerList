@@ -28,7 +28,6 @@ public class PlayerList {
 	private void tick(ServerTickEvent.Pre event) {
 		MinecraftServer server = event.getServer();
 		if (ConfigManager.isEnabled()) {
-			ConfigData config = ConfigManager.getConfig().configData;
 			for (var player : server.getPlayerList().getPlayers()) {
 				var x = System.nanoTime();
 				if (player.connection == null) {
@@ -45,9 +44,6 @@ public class PlayerList {
 					player.connection.send(new ClientboundTabListPacket(style.getHeader(context, animationTick), style.getFooter(context, animationTick)));
 				}
 
-				if (config.playerName.playerNameUpdateRate > 0 && tick % config.playerName.playerNameUpdateRate == 0) {
-					holder.styledPlayerList$updateName();
-				}
 				player.displayClientMessage(Component.literal(tick + " | " + ((System.nanoTime() - x) / 1000000f)), true);
 			}
 		}
