@@ -43,8 +43,6 @@ public class PlayerList {
 					var animationTick = holder.styledPlayerList$getAndIncreaseAnimationTick();
 					player.connection.send(new ClientboundTabListPacket(style.getHeader(context, animationTick), style.getFooter(context, animationTick)));
 				}
-
-				player.displayClientMessage(Component.literal(tick + " | " + ((System.nanoTime() - x) / 1000000f)), true);
 			}
 		}
 	}
