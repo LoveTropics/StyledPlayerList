@@ -2,7 +2,7 @@ plugins {
 	id 'eclipse'
 	id 'idea'
 	id 'java-library'
-	id 'net.neoforged.moddev' version '1.0.0'
+    id 'net.neoforged.moddev' version '2.0.107'
 	id 'maven-publish'
 }
 
@@ -46,12 +46,18 @@ neoForge {
 }
 
 repositories {
-	maven { url = "https://maven.tterrag.com/" }
+    maven {
+        url = 'https://maven.gegy.dev/releases'
+        content {
+            includeGroup 'org.lovetropics'
+            includeGroup 'eu.pb4'
+        }
+    }
 	mavenLocal()
 }
 
 dependencies {
-	jarJar(implementation("com.lovetropics.lib:LTLib:$ltlib_version"))
+	jarJar(implementation("org.lovetropics:LTLib:$ltlib_version"))
 	jarJar(implementation("eu.pb4:placeholder-api-lt:$placeholder_api_version"))
 }
 

@@ -17,7 +17,7 @@ import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import org.slf4j.Logger;
 
 import java.io.BufferedReader;
@@ -48,8 +48,8 @@ public class ConfigManager {
     }
 
     @SubscribeEvent
-    public static void addReloadListeners(AddReloadListenerEvent event) {
-        event.addListener(new SimplePreparableReloadListener<LoadResult>() {
+    public static void addReloadListeners(AddServerReloadListenersEvent event) {
+        event.addListener(PlayerList.location("config"), new SimplePreparableReloadListener<LoadResult>() {
             @Override
             protected LoadResult prepare(ResourceManager resourceManager, ProfilerFiller profiler) {
                 return load(resourceManager);
