@@ -13,7 +13,7 @@ public class Config {
     public static final NodeParser PARSER = NodeParser.builder()
             .simplifiedTextFormat()
             .quickText()
-            .globalPlaceholders()
+            .serverPlaceholders()
             .staticPreParsing()
             .build();
 
@@ -40,7 +40,7 @@ public class Config {
 
     @Nullable
     public Component formatPlayerUsername(ServerPlayer player) {
-        return this.passthroughDefault ? null : this.playerNameFormat.toText(PlaceholderContext.of(player, SPLHelper.PLAYER_NAME_VIEW));
+        return this.passthroughDefault ? null : this.playerNameFormat.toComponent(PlaceholderContext.of(player, SPLHelper.PLAYER_NAME_VIEW));
     }
 
     public boolean isPlayerHidden(ServerPlayer player) {

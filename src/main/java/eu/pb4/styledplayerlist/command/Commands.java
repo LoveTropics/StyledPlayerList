@@ -16,7 +16,7 @@ public class Commands {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
         dispatcher.register(
                 literal("styledplayerlist")
-                        .requires(source -> source.hasPermission(net.minecraft.commands.Commands.LEVEL_ADMINS))
+                        .requires(net.minecraft.commands.Commands.hasPermission(net.minecraft.commands.Commands.LEVEL_ADMINS))
 
                         .then(literal("reload")
                                 .executes(Commands::reloadConfig)

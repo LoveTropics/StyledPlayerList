@@ -9,7 +9,7 @@ import eu.pb4.styledplayerlist.PlayerList;
 import eu.pb4.styledplayerlist.config.data.ConfigData;
 import eu.pb4.styledplayerlist.config.data.StyleData;
 import net.minecraft.resources.FileToIdConverter;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -36,8 +36,8 @@ public class ConfigManager {
 
     private static Config CONFIG;
     private static boolean ENABLED = false;
-    private static final LinkedHashMap<ResourceLocation, PlayerListStyle> STYLES = new LinkedHashMap<>();
-    private static final LinkedHashMap<ResourceLocation, StyleData> STYLES_DATA = new LinkedHashMap<>();
+    private static final LinkedHashMap<Identifier, PlayerListStyle> STYLES = new LinkedHashMap<>();
+    private static final LinkedHashMap<Identifier, StyleData> STYLES_DATA = new LinkedHashMap<>();
 
     public static Config getConfig() {
         return CONFIG;
@@ -49,7 +49,7 @@ public class ConfigManager {
 
     @SubscribeEvent
     public static void addReloadListeners(AddServerReloadListenersEvent event) {
-        event.addListener(PlayerList.location("config"), new SimplePreparableReloadListener<LoadResult>() {
+        event.addListener(PlayerList.id("config"), new SimplePreparableReloadListener<LoadResult>() {
             @Override
             protected LoadResult prepare(ResourceManager resourceManager, ProfilerFiller profiler) {
                 return load(resourceManager);
@@ -84,7 +84,7 @@ public class ConfigManager {
     }
 
     private static LoadResult load(ResourceManager resourceManager) {
-        Optional<Resource> configResource = resourceManager.getResource(PlayerList.location("styled_player_list.json"));
+        Optional<Resource> configResource = resourceManager.getResource(PlayerList.id("styled_player_list.json"));
         ConfigData config = new ConfigData();
         if (configResource.isPresent()) {
             try (BufferedReader reader = configResource.get().openAsReader()) {
@@ -95,9 +95,9 @@ public class ConfigManager {
         }
 
         FileToIdConverter styleLister = FileToIdConverter.json("player_list_style");
-        ImmutableMap.Builder<ResourceLocation, StyleData> styles = ImmutableMap.builder();
+        ImmutableMap.Builder<Identifier, StyleData> styles = ImmutableMap.builder();
         styleLister.listMatchingResources(resourceManager).forEach((location, resource) -> {
-            ResourceLocation id = styleLister.fileToId(location);
+            Identifier id = styleLister.fileToId(location);
             try (BufferedReader reader = resource.openAsReader()) {
                 styles.put(id, GSON.fromJson(reader, StyleData.class));
             } catch (IOException | JsonParseException e) {
@@ -114,7 +114,7 @@ public class ConfigManager {
     }
 
     public static PlayerListStyle getStyle() {
-        return STYLES.getOrDefault(PlayerList.location("default"), DefaultValues.EMPTY_STYLE);
+        return STYLES.getOrDefault(PlayerList.id("default"), DefaultValues.EMPTY_STYLE);
     }
 
     public static void rebuildStyled() {
@@ -126,6 +126,6 @@ public class ConfigManager {
         }
     }
 
-    private record LoadResult(ConfigData config, Map<ResourceLocation, StyleData> styles) {
+    private record LoadResult(ConfigData config, Map<Identifier, StyleData> styles) {
     }
 }

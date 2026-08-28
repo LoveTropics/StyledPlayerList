@@ -5,10 +5,8 @@ import eu.pb4.placeholders.api.Placeholders;
 import eu.pb4.styledplayerlist.access.PlayerListViewerHolder;
 import eu.pb4.styledplayerlist.command.Commands;
 import eu.pb4.styledplayerlist.config.ConfigManager;
-import eu.pb4.styledplayerlist.config.data.ConfigData;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundTabListPacket;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
@@ -22,7 +20,7 @@ public class PlayerList {
 		NeoForge.EVENT_BUS.addListener(Commands::register);
 		NeoForge.EVENT_BUS.addListener(this::tick);
 
-		Placeholders.registerChangeEvent((a, b) -> ConfigManager.rebuildStyled());
+		Placeholders.registerServerChangeEvent((a, b) -> ConfigManager.rebuildStyled());
 	}
 
 	private void tick(ServerTickEvent.Pre event) {
@@ -47,8 +45,8 @@ public class PlayerList {
 		}
 	}
 
-	public static ResourceLocation location(String path) {
-		return ResourceLocation.fromNamespaceAndPath(ID, path);
+	public static Identifier id(String path) {
+		return Identifier.fromNamespaceAndPath(ID, path);
 	}
 
 }

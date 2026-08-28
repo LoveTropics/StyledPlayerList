@@ -2,7 +2,7 @@ plugins {
 	id 'eclipse'
 	id 'idea'
 	id 'java-library'
-    id 'net.neoforged.moddev' version '2.0.107'
+    id 'net.neoforged.moddev' version '2.0.141'
 	id 'maven-publish'
 }
 
@@ -12,15 +12,10 @@ base {
 version = project.mod_version
 group = project.maven_group
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 neoForge {
 	version = project.neo_version
-
-	parchment {
-		minecraftVersion = minecraft_version
-		mappingsVersion = parchment_version
-	}
 
 	runs {
 		client {
