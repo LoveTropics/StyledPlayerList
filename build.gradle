@@ -9,7 +9,12 @@ plugins {
 base {
 	archivesName = project.mod_id
 }
-version = project.mod_version
+if (env.RELEASE) {
+    version = mod_version
+
+} else {
+    version = "$mod_version-SNAPSHOT"
+}
 group = project.maven_group
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
@@ -80,17 +85,23 @@ idea {
 }
 
 publishing {
-	publications {
-		register('mavenJava', MavenPublication) {
-			from components.java
-		}
-	}
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
 
-	repositories {
-		if (project.hasProperty('mavendir')) {
-			maven { url mavendir }
-		} else {
-			mavenLocal()
-		}
-	}
+    repositories {
+        if (env.MAVEN_URL) {
+            maven {
+                credentials {
+                    username env.MAVEN_USERNAME
+                    password env.MAVEN_PASSWORD
+                }
+                url env.MAVEN_URL
+            }
+        } else {
+            mavenLocal()
+        }
+    }
 }
