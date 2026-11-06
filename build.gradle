@@ -9,9 +9,9 @@ plugins {
 base {
 	archivesName = project.mod_id
 }
+def env = System.getenv()
 if (env.RELEASE) {
     version = mod_version
-
 } else {
     version = "$mod_version-SNAPSHOT"
 }
